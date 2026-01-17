@@ -2,11 +2,29 @@ import { AsyncLocalStorage } from "node:async_hooks";
 import { createWriteStream, WriteStream } from "node:fs";
 import stringify from "safe-stable-stringify";
 
+/**
+ * LoggerContract
+ *
+ * A shared logging contract used by @ktuban/structured-logger and any dependent libraries.
+ * Defines the minimal set of log levels required for consistent developer experience.
+ *
+ * This contract ensures:
+ * - Safe interoperability between libraries (e.g., safe-json-loader).
+ * - Easy substitution of custom loggers in tests or alternative frameworks.
+ */
+export interface LoggerContract {
+  debug?: (message: string, meta?: unknown) => void;
+  info?: (message: string, meta?: unknown) => void;
+  warn?: (message: string, meta?: unknown) => void;
+  error?: (message: string, meta?: unknown) => void;
+}
+
 export type LogLevel = "error" | "warn" | "info" | "http" | "debug";
 
 export interface BaseLogMeta {
   [key: string]: unknown;
 }
+
 
 export interface HTTPLogMeta extends BaseLogMeta {
   method: string;

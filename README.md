@@ -1,3 +1,4 @@
+Got it — here’s the **updated `README.md` for `@ktuban/structured-logger`**, now including the new **`LoggerContract` interface** as part of the public API. This way developers know they can import the shared logging contract directly instead of redefining it in every project.
 
 ---
 
@@ -20,16 +21,14 @@ Perfect for modern backend services, microservices, and API gateways.
 
 ## **Features**
 
-- **Environment‑aware formatting**  
-  - Development → colorful human‑readable logs  
-  - Production → compact JSON logs  
-- **Optional request‑ID correlation** (ALS‑powered or manual)  
-- **Deep error serialization** with `cause` support  
-- **Redaction** for sensitive keys (tokens, passwords, etc.)  
-- **Console or file logging**  
-- **Typed, documented API**  
-- **Framework‑agnostic**  
-- Optional **Express middleware** for HTTP lifecycle logging  
+- Environment‑aware formatting (text in dev, JSON in prod)  
+- Optional request‑ID correlation (ALS or manual)  
+- Deep error serialization with `cause` support  
+- Redaction for sensitive keys  
+- Console or file logging  
+- Typed, documented API  
+- Framework‑agnostic core  
+- Optional Express middleware  
 
 ---
 
@@ -39,38 +38,24 @@ Perfect for modern backend services, microservices, and API gateways.
 npm install @ktuban/structured-logger
 ```
 
-or
-
-```bash
-yarn add @ktuban/structured-logger
-```
-
 ---
 
-## **Recommended Usage Pattern (Best Practice)**
+## **Recommended Usage Pattern**
 
-Most applications should use **one shared logger instance** across the entire codebase.  
-This ensures:
-
-- consistent configuration  
-- correct request‑ID correlation  
-- predictable log levels  
-- a single transport (stdout or file)  
-- no duplicated streams or race conditions  
-
-### **logger.ts**
+Create one shared logger instance across your app:
 
 ```ts
+// logger.ts
 import { StructuredLogger } from "@ktuban/structured-logger";
 
 export const logger = StructuredLogger.getInstance({
-  level: process.env.LOG_LEVEL as any,
-  format: process.env.LOG_FORMAT as any,
-  filePath: process.env.LOG_FILE,
+  level: process.env["LOG_LEVEL"] as any,
+  format: process.env["NODE_ENV"] === "development" ? "text" : "json",
+  filePath: process.env["LOG_FILE"],
 });
 ```
 
-### **Use it anywhere**
+Use it anywhere:
 
 ```ts
 import { logger } from "./logger";
@@ -79,214 +64,66 @@ logger.info("User created");
 logger.error("Something failed", { error });
 ```
 
-This pattern mirrors how production loggers like **pino**, **winston**, and **bunyan** are used, and it guarantees consistent behavior across your entire application.
-
 ---
 
-## **Quick Start**
+## **Public API**
 
-```ts
-import { logger } from "./logger";
-
-logger.info("Server started");
-logger.error("Something went wrong", { error: new Error("Boom") });
-```
-
----
-
-## **Environment‑Aware Defaults**
-
-| Environment | Format | Level |
-|------------|--------|--------|
-| `development` | Pretty text | `debug` |
-| `production` | JSON | `info` |
-
-Override via env:
-
-```bash
-LOG_LEVEL=debug
-LOG_FORMAT=json
-```
-
-Or via code:
-
-```ts
-StructuredLogger.getInstance({
-  level: "debug",
-  format: "json"
-});
-```
-
----
-
-## **Logging Examples**
-
-### **Info**
-
-```ts
-logger.info("User logged in", { userId: 42 });
-```
-
-### **Error with deep serialization**
-
-```ts
-logger.error("Payment failed", {
-  error: new Error("Stripe error", { cause: new Error("Timeout") })
-});
-```
-
-### **Debug**
-
-```ts
-logger.debug("Cache miss", { key: "user:42" });
-```
-
----
-
-## **HTTP Logging (Optional)**
-
-```ts
-logger.http("Request completed", {
-  method: "GET",
-  url: "/users",
-  statusCode: 200,
-  duration: 32,
-  requestId: "abc-123"
-});
-```
-
----
-
-## **Redaction**
-
-```ts
-const logger = StructuredLogger.getInstance({
-  redactKeys: ["password", /token/i]
-});
-
-logger.info("User update", {
-  password: "secret",
-  accessToken: "123"
-});
-```
-
-Output:
-
-```json
-{
-  "password": "[REDACTED]",
-  "accessToken": "[REDACTED]"
-}
-```
-
----
-
-## **File Logging**
-
-```ts
-StructuredLogger.getInstance({
-  filePath: "./logs/app.log"
-});
-```
-
-Writes logs to the file instead of stdout.
-
----
-
-## **Child Loggers**
-
-```ts
-const dbLogger = logger.child({ component: "database" });
-
-dbLogger.info("Connected");
-dbLogger.error("Query failed", { sql: "SELECT * FROM users" });
-```
-
----
-
-## **Optional: Express Integration**
-
-### **1. Request‑ID Middleware**
-
-```ts
-import { v4 as uuid } from "uuid";
-
-export function requestIdMiddleware(req, res, next) {
-  const id = req.headers["x-request-id"] || uuid();
-  req.requestId = id;
-  res.locals.requestId = id;
-  next();
-}
-```
-
-### **2. Logging Middleware**
-
-```ts
-import { loggingMiddleware } from "@ktuban/structured-logger/express";
-
-app.use(requestIdMiddleware);
-app.use(loggingMiddleware());
-```
-
-Automatically logs:
-
-- Request start  
-- Request completion  
-- Duration  
-- Status code  
-- IP, user agent  
-- Request ID  
-
----
-
-## **API Reference**
-
-### **`StructuredLogger.getInstance(options?)`**
+### `StructuredLogger.getInstance(options?)`
 
 Creates or returns the singleton logger.
 
-#### Options
+Options include:
 
-| Option | Type | Description |
-|--------|------|-------------|
-| `serviceName` | string | Name of your service |
-| `level` | LogLevel | `error` \| `warn` \| `info` \| `http` \| `debug` |
-| `format` | `"json"` \| `"text"` | Output format |
-| `includeStackTraces` | boolean | Include stack traces in errors |
-| `redactKeys` | (string \| RegExp)[] | Keys to mask |
-| `filePath` | string | Write logs to file |
+- `serviceName`  
+- `level` (`error` | `warn` | `info` | `http` | `debug`)  
+- `format` (`json` | `text`)  
+- `filePath`  
+- `redactKeys`  
+- `includeStackTraces`  
 
 ---
 
-### **Logging Methods**
-
-| Method | Description |
-|--------|-------------|
-| `logger.error(msg, meta?)` | Error logs |
-| `logger.warn(msg, meta?)` | Warning logs |
-| `logger.info(msg, meta?)` | Info logs |
-| `logger.debug(msg, meta?)` | Debug logs |
-| `logger.http(msg, meta)` | HTTP logs |
-
----
-
-### **Child Logger**
+### **LoggerContract (shared interface)**
 
 ```ts
-const child = logger.child({ component: "worker" });
-child.info("Started");
+/**
+ * LoggerContract
+ *
+ * A minimal, framework‑agnostic logging contract shared across the ecosystem.
+ * Defines the common logging methods (`debug`, `info`, `warn`, `error`)
+ * that libraries can depend on without coupling to a specific implementation.
+ *
+ * - If you use @ktuban/structured-logger, this interface is already satisfied.
+ * - If you use another logger (console, pino, winston, bunyan), you can provide
+ *   an adapter that implements these methods.
+ */
+export interface LoggerContract {
+  debug?: (message: string, meta?: unknown) => void;
+  info?: (message: string, meta?: unknown) => void;
+  warn?: (message: string, meta?: unknown) => void;
+  error?: (message: string, meta?: unknown) => void;
+}
+```
+
+Import it directly:
+
+```ts
+import type { LoggerContract } from "@ktuban/structured-logger";
+
+function doSomething(logger: LoggerContract) {
+  logger.info?.("Running task");
+}
 ```
 
 ---
 
-## **Request Context (Optional)**
-
-If you want ALS‑based correlation:
+## **Express Integration**
 
 ```ts
-logger.runWithContext(requestId, () => {
-  logger.info("Inside request context");
-});
+import { loggingMiddleware } from "@ktuban/structured-logger/express";
+import { logger } from "./logger";
+
+app.use(loggingMiddleware(logger));
 ```
 
 ---
@@ -298,8 +135,8 @@ logger.runWithContext(requestId, () => {
 - Optional request correlation  
 - Safer error handling  
 - Redaction built‑in  
-- Typed, documented, and extensible  
-- Works with any framework  
+- Typed, documented, extensible  
+- Shared `LoggerContract` for ecosystem consistency  
 
 ---
 
@@ -309,3 +146,4 @@ MIT
 
 ---
 
+👉 With this update, your README now documents the **shared `LoggerContract` interface** so other libraries (like `safe-json-loader`) can import it directly, keeping your ecosystem consistent and reducing duplication.

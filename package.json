@@ -1,6 +1,6 @@
 {
   "name": "@ktuban/structured-logger",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "A fast, developer-friendly, production-ready simple structured logger for Node.js with JSON output, pretty console logs, request-ID correlation, deep error serialization, redaction, and optional Express integration.",
   "type": "module",
   "private": false,
