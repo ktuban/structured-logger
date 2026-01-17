@@ -1,4 +1,3 @@
-Got it — here’s the **updated `README.md` for `@ktuban/structured-logger`**, now including the new **`LoggerContract` interface** as part of the public API. This way developers know they can import the shared logging contract directly instead of redefining it in every project.
 
 ---
 
