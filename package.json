@@ -1,21 +1,17 @@
 {
   "name": "@ktuban/structured-logger",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A fast, developer-friendly, production-ready simple structured logger for Node.js with JSON output, pretty console logs, request-ID correlation, deep error serialization, redaction, and optional Express integration.",
-  "type": "module",
   "private": false,
+  "type": "module",
   "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
   "types": "dist/types/index.d.ts",
   "exports": {
     ".": {
       "import": "./dist/esm/index.js",
       "require": "./dist/cjs/index.js",
       "types": "./dist/types/index.d.ts"
-    },
-    "./express": {
-      "import": "./dist/esm/express.js",
-      "require": "./dist/cjs/express.js",
-      "types": "./dist/types/express.d.ts"
     }
   },
   "files": [
@@ -33,11 +29,10 @@
   "scripts": {
     "clean": "rimraf dist",
     "build": "npm run clean && npm run build:esm && npm run build:cjs && npm run build:types",
-    "build:esm": "tsc --project tsconfig.json --outDir dist/esm --module ES2022",
-    "build:cjs": "tsc --project tsconfig.json --outDir dist/cjs --module CommonJS --declaration false",
-    "build:types": "tsc --project tsconfig.types.json --emitDeclarationOnly --outDir dist/types",
+    "build:esm": "tsc -p tsconfig.esm.json",
+    "build:cjs": "tsc -p tsconfig.cjs.json",
+    "build:types": "tsc -p tsconfig.types.json",
     "lint": "eslint . --ext .ts",
-    "prepare": "npm run build",
     "test": "node ./dist/esm/test.js",
     "start": "node ./dist/esm/index.js"
   },
@@ -66,17 +61,18 @@
   },
   "homepage": "https://github.com/ktuban/structured-logger#readme",
   "dependencies": {
+    "rimraf": "^6.1.2",
     "safe-stable-stringify": "^2.4.3",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
-    "@types/node": "^25.0.7",
+    "@types/express": "^4.17.21",
+    "@types/node": "^25.2.3",
+    "@types/safe-json-stringify": "^1.1.5",
     "@typescript-eslint/eslint-plugin": "^8.53.0",
     "@typescript-eslint/parser": "^8.53.0",
-    "@types/express": "^4.17.21",
     "eslint": "^9.39.2",
-    "rimraf": "^6.1.2",
     "typescript": "^5.9.3",
-    "@types/safe-json-stringify": "^1.1.5"
+    "rimraf": "^6.1.2"
   }
 }

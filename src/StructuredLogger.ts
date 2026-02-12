@@ -1,30 +1,12 @@
 import { AsyncLocalStorage } from "node:async_hooks";
-import { createWriteStream, WriteStream } from "node:fs";
+import { createWriteStream } from "node:fs";
 import stringify from "safe-stable-stringify";
-
-/**
- * LoggerContract
- *
- * A shared logging contract used by @ktuban/structured-logger and any dependent libraries.
- * Defines the minimal set of log levels required for consistent developer experience.
- *
- * This contract ensures:
- * - Safe interoperability between libraries (e.g., safe-json-loader).
- * - Easy substitution of custom loggers in tests or alternative frameworks.
- */
-export interface LoggerContract {
-  debug?: (message: string, meta?: unknown) => void;
-  info?: (message: string, meta?: unknown) => void;
-  warn?: (message: string, meta?: unknown) => void;
-  error?: (message: string, meta?: unknown) => void;
-}
 
 export type LogLevel = "error" | "warn" | "info" | "http" | "debug";
 
 export interface BaseLogMeta {
   [key: string]: unknown;
 }
-
 
 export interface HTTPLogMeta extends BaseLogMeta {
   method: string;
@@ -65,7 +47,7 @@ const COLORS = {
   warn: "\x1b[33m",
   info: "\x1b[36m",
   debug: "\x1b[35m",
-  http: "\x1b[32m"
+  http: "\x1b[32m",
 };
 
 const RESET = "\x1b[0m";
@@ -80,7 +62,7 @@ export class StructuredLogger {
     warn: 1,
     info: 2,
     http: 3,
-    debug: 4
+    debug: 4,
   };
 
   private options: Required<LoggerOptions>;
@@ -95,7 +77,7 @@ export class StructuredLogger {
       format: options.format ?? (isProd ? "json" : "text"),
       includeStackTraces: options.includeStackTraces ?? !isProd,
       redactKeys: options.redactKeys ?? [],
-      filePath: options.filePath ?? ""
+      filePath: options.filePath ?? "",
     };
 
     this.stream = this.options.filePath
@@ -131,7 +113,7 @@ export class StructuredLogger {
       name: err.name,
       message: err.message,
       stack: this.options.includeStackTraces ? err.stack : undefined,
-      cause: err.cause instanceof Error ? this.serializeError(err.cause) : err.cause
+      cause: err.cause instanceof Error ? this.serializeError(err.cause) : err.cause,
     };
   }
 
@@ -141,7 +123,8 @@ export class StructuredLogger {
     if (meta instanceof Error) return this.serializeError(meta);
 
     if (Array.isArray(meta)) {
-      return meta.map(v => this.normalizeMeta(v)) as unknown as BaseLogMeta;
+      // Represent arrays as a single field to avoid weird shapes
+      return { items: meta.map((v) => this.normalizeMeta(v)) };
     }
 
     if (typeof meta === "object") {
@@ -160,8 +143,11 @@ export class StructuredLogger {
 
     for (const key of Object.keys(clone)) {
       for (const rule of this.options.redactKeys) {
-        if (typeof rule === "string" && key === rule) clone[key] = "[REDACTED]";
-        if (rule instanceof RegExp && rule.test(key)) clone[key] = "[REDACTED]";
+        if (typeof rule === "string" && key === rule) {
+          clone[key] = "[REDACTED]";
+        } else if (rule instanceof RegExp && rule.test(key)) {
+          clone[key] = "[REDACTED]";
+        }
       }
     }
 
@@ -202,24 +188,35 @@ export class StructuredLogger {
       service: this.options.serviceName,
       environment: process.env["NODE_ENV"] ?? "development",
       meta: normalized,
-      requestId: (meta as HTTPLogMeta).requestId ?? this.getRequestId()
+      requestId: (meta as HTTPLogMeta).requestId ?? this.getRequestId(),
     };
 
     this.stream.write(this.format(entry) + "\n");
   }
 
   // ───────────────────────────────────────────────────────────────
-  // Public API
+  // Public API (arrow functions to preserve `this`)
   // ───────────────────────────────────────────────────────────────
 
-  error(msg: string, meta: BaseLogMeta = {}) { this.write("error", msg, meta); }
-  warn(msg: string, meta: BaseLogMeta = {}) { this.write("warn", msg, meta); }
-  info(msg: string, meta: BaseLogMeta = {}) { this.write("info", msg, meta); }
-  debug(msg: string, meta: BaseLogMeta = {}) { this.write("debug", msg, meta); }
+  error = (msg: string, meta: BaseLogMeta = {}) => {
+    this.write("error", msg, meta);
+  };
 
-  http(msg: string, meta: HTTPLogMeta) {
+  warn = (msg: string, meta: BaseLogMeta = {}) => {
+    this.write("warn", msg, meta);
+  };
+
+  info = (msg: string, meta: BaseLogMeta = {}) => {
+    this.write("info", msg, meta);
+  };
+
+  debug = (msg: string, meta: BaseLogMeta = {}) => {
+    this.write("debug", msg, meta);
+  };
+
+  http = (msg: string, meta: HTTPLogMeta) => {
     this.write("http", msg, meta);
-  }
+  };
 
   // ───────────────────────────────────────────────────────────────
   // Child Logger
@@ -234,7 +231,7 @@ export class StructuredLogger {
       info: (msg: string, meta: BaseLogMeta = {}) =>
         this.info(msg, { ...fixedMeta, ...meta }),
       debug: (msg: string, meta: BaseLogMeta = {}) =>
-        this.debug(msg, { ...fixedMeta, ...meta })
+        this.debug(msg, { ...fixedMeta, ...meta }),
     };
   }
 }

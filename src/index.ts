@@ -1,6 +1,6 @@
 
 export * from "./StructuredLogger.js"
-export * from "./express.js"
+export * from "./express.utils.js"
 
 /*
 import { StructuredLogger } from "./StructuredLogger.js";
